@@ -1,0 +1,42 @@
+{
+  "name": "gulp-upyun",
+  "description": "gulp plugins for upyun service",
+  "version": "1.0.1",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "gulp && echo '-----' &&mocha ./test/*-test.coffee"
+  },
+  "homepage": "https://github.com/jacobbubu/gulp-upyun",
+  "author": "Rong Shen <rong.shen@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jacobbubu/gulp-upyun.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jacobbubu/gulp-upyun/issues"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "coffee-script": "^1.7.1",
+    "gulp": "^3.8.5",
+    "gulp-coffee": "^2.0.1",
+    "gulp-rimraf": "^0.1.0",
+    "mocha": "^1.20.1",
+    "should": "^4.0.4"
+  },
+  "dependencies": {
+    "async": "^0.9.0",
+    "event-stream": "^3.1.5",
+    "glob": "^4.0.3",
+    "glob2base": "0.0.9",
+    "gulp-util": "^2.2.19",
+    "minimatch": "^0.3.0",
+    "request": "^2.36.0",
+    "through2": "^0.5.1",
+    "vinyl": "^0.2.3"
+  },
+  "keywords": [
+    "gulpplugin",
+    "upyun"
+  ]
+}
