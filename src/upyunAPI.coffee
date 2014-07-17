@@ -51,7 +51,6 @@ api.getAllMatchedFiles = (ourGlob, negatives, opts, cb) ->
         params = getHttpParams host, folder, opts
         request params, (err, res, body) ->
             return cb err if err?
-
             if res.statusCode isnt 200
                 return cb { statusCode: res.statusCode, body: body }
 
@@ -74,8 +73,8 @@ api.getAllMatchedFiles = (ourGlob, negatives, opts, cb) ->
                     stat.isSymbolicLink = STAT_FALSE
                     stat.isFIFO = STAT_FALSE
                     stat.isSocket = STAT_FALSE
-                    stat.ctime = stat.mtime = stat.atime = ctime
-                    stat.size = length
+                    stat.ctime = stat.mtime = stat.atime = new Date(ctime * 1000)
+                    stat.size = Number length
 
                     vf = new File
                         cwd: '/'
@@ -124,7 +123,6 @@ streamToBuffer = api.streamToBuffer = (stream, cb)->
         cb null, data
     .once 'error', (err) ->
         cb err
-    .resume()
 
 api.putFile = (startingFolder, file, opts, cb) ->
     return cb() if file.isNull()
