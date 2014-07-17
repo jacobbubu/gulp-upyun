@@ -19,7 +19,12 @@ module.exports = (ourGlob, negatives, opts) ->
     es.readable (count, cb) ->
         stream = @
         api.getAllMatchedFiles ourGlob, negatives, opts, (err, vfs) ->
-            return cb err if err?
+            if err?
+                if typeof(err) is 'object' and err.statusCode is 404
+                    stream.emit 'end'
+                    return cb()
+                else
+                    return cb err
 
             vfs.forEach (vf) -> stream.emit 'data', vf
 
