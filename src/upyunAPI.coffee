@@ -20,7 +20,7 @@ getHttpParams = (host, remotePath, opts, contentLength = 0, method = 'GET') ->
     return {
         url: fullUrl
         headers:
-            authorization: "UpYun #{opts.username}:" + sign method, remotePath, opts.password, dateHeader, contentLength
+            authorization: "UpYun #{opts.username}:" + sign method, encodeURI(remotePath), opts.password, dateHeader, contentLength
             date: dateHeader
     }
 
@@ -52,7 +52,7 @@ api.getAllMatchedFiles = (ourGlob, negatives, opts, cb) ->
         request params, (err, res, body) ->
             return cb err if err?
             if res.statusCode isnt 200
-                return cb { statusCode: res.statusCode, body: body }
+                return cb { statusCode: res.statusCode, body: body, filename: folder }
 
             return cb() if not body
 
@@ -91,7 +91,11 @@ api.getAllMatchedFiles = (ourGlob, negatives, opts, cb) ->
                                 request p, (err, res, body) ->
                                     return cb err if err?
                                     if res.statusCode isnt 200
-                                        return cb { statusCode: res.statusCode, body: body }
+                                        return cb {
+                                            statusCode: res.statusCode
+                                            body: body
+                                            filename: filePath
+                                        }
                                     vf.contents = body
                                     result.push vf
                                     cb()
@@ -139,7 +143,11 @@ api.putFile = (startingFolder, file, opts, cb) ->
         request.put params, (err, res, body) ->
             return cb err if err?
             if res.statusCode isnt 200
-                return cb { statusCode: res.statusCode, body: body }
+                return cb {
+                    statusCode: res.statusCode
+                    body: body
+                    filename: file.path
+                }
 
             result =
                 'x-upyun-width': res.headers['x-upyun-width']
@@ -174,7 +182,7 @@ api.delFileOrDir = (filePath, opts, cb) ->
             when 404
                 cb()
             else
-                cb { statusCode: res.statusCode, body: body }
+                cb { statusCode: res.statusCode, body: body, filename: filePath }
 
 api.delFolder = (startingfolder, opts, cb) ->
     host = opts.host ? DEFAULT_HOST
@@ -189,7 +197,7 @@ api.delFolder = (startingfolder, opts, cb) ->
             return cb() if res.statusCode is 404
 
             if res.statusCode isnt 200
-                return cb { statusCode: res.statusCode, body: body }
+                return cb { statusCode: res.statusCode, body: body, filename: folder }
 
             if not body
                 return api.delFileOrDir folder, opts, cb
