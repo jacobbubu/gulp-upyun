@@ -4,7 +4,7 @@ describe 'gulp-upyun: ', ->
     gulp                = require 'gulp'
     upyunSrc            = require '../lib/upyunSrc'
     upyunDest           = require '../lib/upyunDest'
-    upyunRimraf         =  require '../lib/upyunRimraf'
+    upyunRimraf         = require '../lib/upyunRimraf'
     { streamToBuffer }  = require '../lib/upyunAPI'
     path                = require 'path'
 
@@ -168,8 +168,10 @@ describe 'gulp-upyun: ', ->
             should.not.exist err
 
             opts.read = false
-            result = []
             upyunSrc "#{serverTestFolder}/**/*", opts
             .once 'error', (err) ->
-                err.should.have.property 'statusCode', 404
+                done err
+            .once 'end', ->
                 done()
+            .on 'data', (file) ->
+                done new Error 'We should not get file in this case'

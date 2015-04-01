@@ -26,7 +26,7 @@ getHttpParams = (host, remotePath, opts, contentLength = 0, method = 'GET') ->
 
 api = {}
 
-api.getAllMatchedFiles = (ourGlob, negatives, opts, cb) ->
+api.getAllMatchedFiles = (emitter, ourGlob, negatives, opts, cb) ->
     opts ?= {}
     negatives ?= []
 
@@ -45,7 +45,7 @@ api.getAllMatchedFiles = (ourGlob, negatives, opts, cb) ->
     negativeMms = negatives.map (n) ->
         new Minimatch n
 
-    result = []
+    # result = []
 
     getOneFolderInfo = (folder, cb) ->
         params = getHttpParams host, folder, opts
@@ -57,7 +57,7 @@ api.getAllMatchedFiles = (ourGlob, negatives, opts, cb) ->
             return cb() if not body
 
             files = body.split '\n'
-            async.each files
+            async.eachLimit files, 8
             , (f, cb) ->
                 return cb() if not f
 
@@ -97,17 +97,21 @@ api.getAllMatchedFiles = (ourGlob, negatives, opts, cb) ->
                                             filename: filePath
                                         }
                                     vf.contents = body
-                                    result.push vf
+                                    emitter.emit 'data', vf
+                                    # result.push vf
                                     cb()
                             else
                                 vf.contents = request(p).pipe(through())
-                                result.push vf
+                                emitter.emit 'data', vf
+                                # result.push vf
                                 cb()
                         else
-                            result.push vf
+                            emitter.emit 'data', vf
+                            # result.push vf
                             cb()
                     else
-                        result.push vf
+                        # result.push vf
+                        emitter.emit 'data', vf
                         getOneFolderInfo filePath, cb
                 else if isFile
                     cb()
@@ -117,7 +121,7 @@ api.getAllMatchedFiles = (ourGlob, negatives, opts, cb) ->
                 cb err
 
     getOneFolderInfo startingFolder, (err) ->
-        if err? then cb err else cb null, result
+        if err? then cb err else cb()
 
 streamToBuffer = api.streamToBuffer = (stream, cb)->
     data = new Buffer 0
