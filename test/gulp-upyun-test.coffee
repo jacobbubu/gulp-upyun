@@ -136,10 +136,10 @@ describe 'gulp-upyun: ', ->
         catch err
             throw err
 
-    it 'upload again should succeed', (done) ->
+    it 'upload again using stream should succeed', (done) ->
         opts = credential
         opts.md5 = true
-        gulp.src testFilesGlob
+        gulp.src testFilesGlob, { buffer: false }
         .pipe upyunDest serverTestFolder, opts
         .once 'error', (err) ->
             throw JSON.stringify err
