@@ -26,7 +26,5 @@ module.exports = (ourGlob, negatives, opts) ->
                 else
                     return cb err
 
-            # vfs.forEach (vf) -> stream.emit 'data', vf
-
             stream.emit 'end'
             cb()

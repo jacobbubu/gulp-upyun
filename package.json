@@ -1,7 +1,7 @@
 {
   "name": "gulp-upyun",
   "description": "gulp plugins for upyun service",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "main": "lib/index.js",
   "scripts": {
     "test": "gulp && echo '-----' &&mocha ./test/*-test.coffee"

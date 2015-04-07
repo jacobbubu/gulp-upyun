@@ -45,21 +45,42 @@ api.getAllMatchedFiles = (emitter, ourGlob, negatives, opts, cb) ->
     negativeMms = negatives.map (n) ->
         new Minimatch n
 
-    # result = []
-
     getOneFolderInfo = (folder, cb) ->
-        params = getHttpParams host, folder, opts
-        request params, (err, res, body) ->
-            return cb err if err?
-            if res.statusCode isnt 200
-                return cb { statusCode: res.statusCode, body: body, filename: folder }
 
-            return cb() if not body
+        getPagedResult = (cb) ->
 
-            files = body.split '\n'
+            oneRequest = (iter, initial, cb) ->
+                params = getHttpParams host, folder, opts
+                params.headers['x-list-iter'] = iter if iter?
+
+                request params, (err, res, body) ->
+                    return cb err if err?
+
+                    if res.statusCode isnt 200
+                        return cb { statusCode: res.statusCode, body: body, filename: folder }
+
+                    iter = res.headers['x-upyun-list-iter']
+                    hasMore = iter? and iter.toLowerCase() isnt 'none'
+
+                    if body[body.length-1] isnt '\n'
+                        body += '\n'
+
+                    initial += body
+
+                    if hasMore
+                        oneRequest iter, initial, cb
+                    else
+                        cb null, initial
+
+            oneRequest null, '', cb
+
+        getPagedResult (err, upYunResult) ->
+            return cb() if not upYunResult
+
+            files = upYunResult.split '\n'
             async.eachLimit files, 8
             , (f, cb) ->
-                return cb() if not f
+                return cb() if not f.trim()
 
                 [name, isFile, length, ctime] = f.split '\t'
                 isFile = isFile is 'N'
@@ -98,19 +119,16 @@ api.getAllMatchedFiles = (emitter, ourGlob, negatives, opts, cb) ->
                                         }
                                     vf.contents = body
                                     emitter.emit 'data', vf
-                                    # result.push vf
                                     cb()
                             else
                                 vf.contents = request(p).pipe(through())
                                 emitter.emit 'data', vf
-                                # result.push vf
                                 cb()
                         else
                             emitter.emit 'data', vf
-                            # result.push vf
+
                             cb()
                     else
-                        # result.push vf
                         emitter.emit 'data', vf
                         getOneFolderInfo filePath, cb
                 else if isFile
