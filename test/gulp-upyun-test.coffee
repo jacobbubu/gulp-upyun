@@ -32,11 +32,16 @@ describe 'gulp-upyun: ', ->
     it 'upload test files to upyun should succeed', (done) ->
         opts = credential
         opts.md5 = true
+        hasStatusReport = false
+
         gulp.src testFilesGlob
         .pipe upyunDest serverTestFolder, opts
+        .on 'upload', (fileStatus) ->
+            hasStatusReport = true if fileStatus?
         .once 'error', (err) ->
             throw err
-        .once 'finish', ->
+        .once 'allUploaded', ->
+            hasStatusReport.should.be.true
             done()
 
     it 'get all files from upyun should succeed', (done) ->
@@ -139,11 +144,16 @@ describe 'gulp-upyun: ', ->
     it 'upload again using stream should succeed', (done) ->
         opts = credential
         opts.md5 = true
+        hasStatusReport = false
+
         gulp.src testFilesGlob, { buffer: false }
         .pipe upyunDest serverTestFolder, opts
+        .on 'upload', (fileStatus) ->
+            hasStatusReport = true if fileStatus?
         .once 'error', (err) ->
-            throw JSON.stringify err
-        .once 'finish', ->
+            throw err
+        .once 'allUploaded', ->
+            hasStatusReport.should.be.true
             done()
 
     it 'delete one single file', (done) ->

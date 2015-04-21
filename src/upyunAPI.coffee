@@ -9,6 +9,7 @@ Minimatch               = require('minimatch').Minimatch
 Stat                    = require('fs').Stats
 through                 = require 'through2'
 { sign, md5 }           = require('./upSign')
+toArray                 = require 'stream-to-array'
 
 DEFAULT_HOST = 'http://v0.api.upyun.com'
 STAT_TRUE    = -> true
@@ -142,13 +143,9 @@ api.getAllMatchedFiles = (emitter, ourGlob, negatives, opts, cb) ->
         if err? then cb err else cb()
 
 streamToBuffer = api.streamToBuffer = (stream, cb)->
-    data = new Buffer 0
-    stream.on 'data', (chunk) ->
-        data = Buffer.concat [chunk]
-    .once 'end', ->
-        cb null, data
-    .once 'error', (err) ->
-        cb err
+    toArray stream, (err, arr) ->
+        return cb err if err?
+        cb null, Buffer.concat arr
 
 api.putFile = (startingFolder, file, opts, cb) ->
     return cb() if file.isNull()
@@ -225,7 +222,7 @@ api.delFolder = (startingfolder, opts, cb) ->
                 return api.delFileOrDir folder, opts, cb
 
             files = body.split '\n'
-            async.each files
+            async.eachLimit files, 8
             , (f, cb) ->
                 return cb() if not f
 
