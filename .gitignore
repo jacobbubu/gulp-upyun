@@ -1,3 +1,4 @@
 /node_modules
 *.sublime-workspace
 /test/credential.js
+npm-debug.log
