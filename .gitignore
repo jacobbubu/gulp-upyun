@@ -2,3 +2,4 @@
 *.sublime-workspace
 /test/credential.js
 npm-debug.log
+.nvmrc
