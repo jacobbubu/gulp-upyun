@@ -25,6 +25,49 @@ getHttpParams = (host, remotePath, opts, contentLength = 0, method = 'GET') ->
             date: dateHeader
     }
 
+# For upyun, there are limitations for API calls on the same bucket.
+# The minumun interval between two operations as following:
+# delete 143ms
+# get   100ms
+# head  150ms
+# put   500ms
+# post  500ms
+# That may be changed in future
+
+WAIT_FOR_GET = 120
+WAIT_FOR_PUT = 600
+WAIT_FOR_DEL = 160
+
+delayCall = (fn, delay, cb) ->
+    fn (err, res, body) ->
+        if err?
+            cb err
+        else if res.statusCode is 429
+            setTimeout ->
+                delayCall fn, delay, cb
+            , delay
+        else
+            cb err, res, body
+
+httpGet = (params, cb) ->
+    delayCall request.bind(@, params), WAIT_FOR_GET, cb
+
+httpPut = (params, cb) ->
+    delayCall request.put.bind(request, params), WAIT_FOR_PUT, cb
+
+httpDel = (params, cb) ->
+    delayCall request.del.bind(request, params), WAIT_FOR_DEL, cb
+
+getHttpStream = (params, cb) ->
+    request params
+    .on 'response', (res) ->
+        if res.statusCode is 429
+            setTimeout ->
+                getHttpStream params, cb
+            , WAIT_FOR_GET
+        else
+            cb null, @
+
 api = {}
 
 api.getAllMatchedFiles = (emitter, ourGlob, negatives, opts, cb) ->
@@ -54,14 +97,17 @@ api.getAllMatchedFiles = (emitter, ourGlob, negatives, opts, cb) ->
                 params = getHttpParams host, folder, opts
                 params.headers['x-list-iter'] = iter if iter?
 
-                request params, (err, res, body) ->
+                httpGet params, (err, res, body) ->
                     return cb err if err?
 
                     if res.statusCode isnt 200
+                        if Buffer.isBuffer body
+                            bpdy = body.toString()
                         return cb { statusCode: res.statusCode, body: body, filename: folder }
 
                     iter = res.headers['x-upyun-list-iter']
-                    hasMore = iter? and iter.toLowerCase() isnt 'none'
+                    # the latest update of upyun use this mgix number as a sign for NO-MORE files
+                    hasMore = iter? and (iter != 'g2gCZAAEbmV4dGQAA2VvZg') and iter.toLowerCase() isnt 'none'
 
                     if body[body.length-1] isnt '\n'
                         body += '\n'
@@ -110,9 +156,11 @@ api.getAllMatchedFiles = (emitter, ourGlob, negatives, opts, cb) ->
                             p = getHttpParams host, filePath, opts
                             if opts.buffer
                                 p.encoding = null
-                                request p, (err, res, body) ->
+                                httpGet p, (err, res, body) ->
                                     return cb err if err?
                                     if res.statusCode isnt 200
+                                        if Buffer.isBuffer body
+                                            body = body.toString()
                                         return cb {
                                             statusCode: res.statusCode
                                             body: body
@@ -122,9 +170,13 @@ api.getAllMatchedFiles = (emitter, ourGlob, negatives, opts, cb) ->
                                     emitter.emit 'data', vf
                                     cb()
                             else
-                                vf.contents = request(p).pipe(through())
-                                emitter.emit 'data', vf
-                                cb()
+                                getHttpStream p, (err, res) ->
+                                    if err?
+                                        cb err
+                                    else
+                                        vf.contents = res.pipe(through())
+                                        emitter.emit 'data', vf
+                                        cb()
                         else
                             emitter.emit 'data', vf
 
@@ -159,7 +211,7 @@ api.putFile = (startingFolder, file, opts, cb) ->
         params.headers['content-length'] = length
         params.headers['content-type'] = opts['content-type'] if opts['content-type']?
         params.headers['content-md5'] = md5 data if opts.md5
-        request.put params, (err, res, body) ->
+        httpPut params, (err, res, body) ->
             return cb err if err?
             if res.statusCode isnt 200
                 return cb {
@@ -193,7 +245,7 @@ api.delFileOrDir = (filePath, opts, cb) ->
     host = opts.host ? DEFAULT_HOST
     params = getHttpParams host, filePath, opts, 0, 'DELETE'
 
-    request.del params, (err, res, body) ->
+    httpDel params, (err, res, body) ->
         return cb err if err?
         switch res.statusCode
             when 200
@@ -211,7 +263,7 @@ api.delFolder = (startingfolder, opts, cb) ->
             folder = folder + '/'
 
         params = getHttpParams host, folder, opts
-        request params, (err, res, body) ->
+        httpGet params, (err, res, body) ->
             return cb err if err?
             return cb() if res.statusCode is 404
 
