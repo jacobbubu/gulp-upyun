@@ -102,7 +102,7 @@ api.getAllMatchedFiles = (emitter, ourGlob, negatives, opts, cb) ->
 
                     if res.statusCode isnt 200
                         if Buffer.isBuffer body
-                            bpdy = body.toString()
+                            body = body.toString()
                         return cb { statusCode: res.statusCode, body: body, filename: folder }
 
                     iter = res.headers['x-upyun-list-iter']
