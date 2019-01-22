@@ -1,5 +1,5 @@
 {
-  "name": "gulp-upyun",
+  "name": "gulp-upyun-hotfix",
   "description": "gulp plugins for upyun service",
   "version": "1.1.5",
   "main": "lib/index.js",
