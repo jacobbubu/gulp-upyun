@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "async": "^0.9.0",
-    "event-stream": "^3.3.0",
+    "event-stream": "^4.0.1",
     "glob": "^5.0.3",
     "glob2base": "0.0.12",
     "gulp-util": "^3.0.4",
